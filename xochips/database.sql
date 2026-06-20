@@ -1,0 +1,192 @@
+-- Create Database
+CREATE DATABASE IF NOT EXISTS xo_chips_db;
+USE xo_chips_db;
+
+-- Users Table
+CREATE TABLE users (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    full_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    city VARCHAR(50),
+    address TEXT,
+    profile_image VARCHAR(255) DEFAULT 'default-avatar.png',
+    role ENUM('admin', 'user') DEFAULT 'user',
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Categories Table
+CREATE TABLE categories (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    description TEXT,
+    icon VARCHAR(50),
+    image VARCHAR(255),
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Products/Menu Items Table
+CREATE TABLE products (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(200) NOT NULL,
+    slug VARCHAR(200) UNIQUE NOT NULL,
+    description TEXT,
+    short_description VARCHAR(500),
+    price DECIMAL(10,2) NOT NULL,
+    compare_price DECIMAL(10,2) DEFAULT 0,
+    category_id INT,
+    type ENUM('deal', 'main', 'drink', 'condiment', 'energy') DEFAULT 'main',
+    sku VARCHAR(100),
+    stock_quantity INT DEFAULT 999,
+    is_featured BOOLEAN DEFAULT FALSE,
+    is_new BOOLEAN DEFAULT FALSE,
+    is_on_sale BOOLEAN DEFAULT FALSE,
+    discount_percent INT DEFAULT 0,
+    main_image VARCHAR(255) DEFAULT 'default-product.jpg',
+    additional_images TEXT,
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+);
+
+-- Cart Table
+CREATE TABLE cart (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT DEFAULT 1,
+    special_instructions TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+-- Orders Table
+CREATE TABLE orders (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    order_number VARCHAR(50) UNIQUE NOT NULL,
+    user_id INT NOT NULL,
+    total_amount DECIMAL(10,2) NOT NULL,
+    shipping_charge DECIMAL(10,2) DEFAULT 0,
+    grand_total DECIMAL(10,2) NOT NULL,
+    order_status ENUM('pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled') DEFAULT 'pending',
+    payment_method ENUM('cod', 'card', 'bank_transfer') DEFAULT 'cod',
+    payment_status ENUM('pending', 'paid', 'failed') DEFAULT 'pending',
+    delivery_address TEXT,
+    delivery_city VARCHAR(100),
+    delivery_phone VARCHAR(20),
+    special_requests TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Order Items Table
+CREATE TABLE order_items (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    order_id INT NOT NULL,
+    product_id INT NOT NULL,
+    product_name VARCHAR(200) NOT NULL,
+    product_price DECIMAL(10,2) NOT NULL,
+    quantity INT NOT NULL,
+    total_price DECIMAL(10,2) NOT NULL,
+    special_instructions TEXT,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+);
+
+-- Wishlist Table
+CREATE TABLE wishlist (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    product_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_wishlist (user_id, product_id)
+);
+
+-- Business Hours Table
+CREATE TABLE business_hours (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    day_of_week ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'),
+    open_time TIME,
+    close_time TIME,
+    is_closed BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert Default Categories
+INSERT INTO categories (name, slug, description, icon, image) VALUES
+('Sharing Deals', 'deals', 'Perfect combos for groups', '🍽️', 'deals-category.jpg'),
+('Wok Tossed Fries', 'wok-fries', 'Signature loaded fries with our special sauces', '🍟', 'wok-fries-category.jpg'),
+('Wok Tossed Wings', 'wings', 'Crispy wings tossed in our signature sauces', '🍗', 'wings-category.jpg'),
+('XO Noodles', 'noodles', 'Authentic wok-tossed noodles', '🍜', 'noodles-category.jpg'),
+('XO Dumplings', 'dumplings', 'Handcrafted dumplings', '🥟', 'dumplings-category.jpg'),
+('Rice Bowls', 'rice', 'Steamed rice with your choice of protein', '🍚', 'rice-category.jpg'),
+('Drinks', 'drinks', 'Refreshing beverages', '🥤', 'drinks-category.jpg'),
+('Condiments', 'condiments', 'Signature sauces and spices', '🌶️', 'condiments-category.jpg');
+
+-- Insert Business Hours
+INSERT INTO business_hours (day_of_week, open_time, close_time) VALUES
+('Monday', '11:00:00', '23:00:00'),
+('Tuesday', '11:00:00', '23:00:00'),
+('Wednesday', '11:00:00', '23:00:00'),
+('Thursday', '11:00:00', '23:00:00'),
+('Friday', '11:00:00', '23:30:00'),
+('Saturday', '11:00:00', '23:30:00'),
+('Sunday', '12:00:00', '22:00:00');
+
+-- Insert Sample Menu Items with Images
+
+-- Deals
+INSERT INTO products (name, slug, description, short_description, price, compare_price, category_id, type, is_featured, main_image) VALUES
+('Drip Duo', 'drip-duo', 'Perfect for two! Includes: 1x Chicken & Chips or Rice, 1x Lo Mein, 1x Dumplings, 2x Drinks', 'Perfect 2-person meal deal', 3179, 3440, 1, 'deal', 1, 'drip-duo.jpg'),
+('Supreme Squad', 'supreme-squad', 'Feeds 4 people! Includes: 2x Chicken & Chips/Rice, 1x Beef & Chips, 1x Dumplings, 4x Drinks', 'Family feast for 4', 4649, 5470, 1, 'deal', 1, 'supreme-squad.jpg'),
+('Friends Feast', 'friends-feast', 'Feeds 6 people! Includes: 2x Chicken & Chips/Rice, 1x Beef & Chips, 1x Wings, 1x Dumplings, 6x Drinks', 'Ultimate party platter for 6', 7869, 9260, 1, 'deal', 1, 'friends-feast.jpg');
+
+-- Wok Tossed Fries
+INSERT INTO products (name, slug, description, short_description, price, category_id, type, is_featured, main_image) VALUES
+('Chicken Wok Tossed Fries', 'chicken-wok-fries', 'Crispy golden fries wok-tossed with succulent chicken pieces and our signature XO sauce', 'Crispy fries with tender chicken', 550, 2, 'main', 1, 'chicken-fries.jpg'),
+('Beef Wok Tossed Fries', 'beef-wok-fries', 'Crispy fries wok-tossed with premium beef strips in our signature XO sauce', 'Premium beef on crispy fries', 650, 2, 'main', 1, 'beef-fries.jpg'),
+('Veg Wok Tossed Fries', 'veg-wok-fries', 'Crispy fries wok-tossed with fresh vegetables in our signature XO sauce', 'Vegetarian loaded fries', 450, 2, 'main', 0, 'veg-fries.jpg'),
+('Seafood Wok Tossed Fries', 'seafood-wok-fries', 'Crispy fries wok-tossed with mixed seafood in our signature XO sauce', 'Luxury seafood loaded fries', 750, 2, 'main', 1, 'seafood-fries.jpg');
+
+-- Wings
+INSERT INTO products (name, slug, description, short_description, price, category_id, type, main_image) VALUES
+('Wok Tossed Wings', 'wok-tossed-wings', 'Crispy chicken wings wok-tossed in your choice of Dynamite or XO sauce', 'Crispy wings tossed in signature sauces', 590, 3, 'main', 'wings.jpg'),
+('Chicken Lollipop', 'chicken-lollipop', 'Juicy chicken drumettes marinated in secret spices and fried to perfection', 'Crispy chicken lollipops', 450, 3, 'main', 'lollipop.jpg');
+
+-- Noodles
+INSERT INTO products (name, slug, description, short_description, price, category_id, type, main_image) VALUES
+('XO Noodles', 'xo-noodles', 'Authentic wok-tossed noodles with our signature XO sauce, choice of chicken or beef', 'Signature wok-tossed noodles', 480, 4, 'main', 'xo-noodles.jpg');
+
+-- Dumplings
+INSERT INTO products (name, slug, description, short_description, price, category_id, type, main_image) VALUES
+('XO Dumplings Wok Tossed', 'xo-dumplings-wok', 'Pan-fried dumplings tossed in our signature XO sauce', 'Crispy dumplings with XO sauce', 390, 5, 'main', 'dumplings-wok.jpg'),
+('XO Dumplings Classics', 'xo-dumplings-classic', 'Steamed classic dumplings served with dipping sauce', 'Classic steamed dumplings', 350, 5, 'main', 'dumplings-classic.jpg');
+
+-- Rice
+INSERT INTO products (name, slug, description, short_description, price, category_id, type, main_image) VALUES
+('Chicken Rice Bowl', 'chicken-rice', 'Steamed rice topped with wok-tossed chicken and vegetables', 'Chicken rice bowl', 480, 6, 'main', 'chicken-rice.jpg'),
+('Beef Rice Bowl', 'beef-rice', 'Steamed rice topped with wok-tossed beef and vegetables', 'Beef rice bowl', 580, 6, 'main', 'beef-rice.jpg');
+
+-- Drinks
+INSERT INTO products (name, slug, description, short_description, price, category_id, type, main_image) VALUES
+('Diet Sprite', 'diet-sprite', 'Clean, lemon-lime zest. Stay icy', 'Zero sugar lemon-lime soda', 180, 7, 'drink', 'diet-sprite.jpg'),
+('Sprite', 'sprite', 'The Ultimate Thirst Trap. Icy, lemon-lime perfection', 'Classic lemon-lime soda', 150, 7, 'drink', 'sprite.jpg'),
+('Diet Coke', 'diet-coke', 'Bold flavor, zero mid vibes', 'Sugar-free cola', 150, 7, 'drink', 'diet-coke.jpg'),
+('Coke', 'coke', 'The Main Character Energy. The OG refresher', 'Classic cola', 180, 7, 'drink', 'coke.jpg');
+
+-- Condiments
+INSERT INTO products (name, slug, description, short_description, price, category_id, type, main_image) VALUES
+('Dynamite Sauce', 'dynamite-sauce', 'Viral-Worthy Heat. Orange, creamy, absolute fire', 'Signature spicy creamy sauce', 120, 8, 'condiment', 'dynamite-sauce.jpg'),
+('XO Spice Mix', 'xo-spice', 'The Flavor Cheat Code. Smoky, savory umami bomb', 'Secret recipe dry rub', 120, 8, 'condiment', 'xo-spice.jpg'),
+('House Mayo', 'house-mayo', 'The Ultimate Chill Factor. Thick, velvety, and essential', 'Creamy house mayonnaise', 120, 8, 'condiment', 'house-mayo.jpg');
+
+-- Insert Admin User (password: admin123)
+INSERT INTO users (username, email, password, full_name, phone, role) VALUES
+('admin', 'admin@xochips.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'XO Admin', '+923001234567', 'admin');
